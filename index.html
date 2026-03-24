@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zelvra — Watch what matters</title>
+  <style>
+    :root {
+      --bg: #071018;
+      --bg2: #0b1724;
+      --card: rgba(255,255,255,0.06);
+      --stroke: rgba(255,255,255,0.12);
+      --text: #f5f7fb;
+      --muted: #9eb0c7;
+      --accent: #5eead4;
+      --accent2: #60a5fa;
+      --accent3: #c084fc;
+      --good: #86efac;
+      --warn: #fcd34d;
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(96,165,250,0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(192,132,252,0.16), transparent 24%),
+        radial-gradient(circle at 50% 20%, rgba(94,234,212,0.10), transparent 30%),
+        linear-gradient(180deg, #06101a 0%, #09131d 35%, #071018 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 90%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(94,234,212,0.18), rgba(96,165,250,0.18));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 20px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 600;
+      border: 1px solid transparent;
+      transition: 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      color: #08111a;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 10px 35px rgba(94,234,212,0.22);
+    }
+
+    .btn-secondary {
+      color: var(--text);
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.10);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      align-items: center;
+      gap: 42px;
+      padding: 42px 0 68px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 14px;
+      border-radius: 999px;
+      color: #d8e6f8;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    .pulse-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(94,234,212,0.7);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(94,234,212,0.65); }
+      70% { box-shadow: 0 0 0 14px rgba(94,234,212,0); }
+      100% { box-shadow: 0 0 0 0 rgba(94,234,212,0); }
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 6vw, 74px);
+      line-height: 0.98;
+      letter-spacing: -2px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff, #9fdcff 45%, #b9ffef 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--muted);
+      max-width: 620px;
+      margin: 22px 0 28px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .proof-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .proof-pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: #dbe7f5;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .hero-visual {
+      position: relative;
+      min-height: 560px;
+      display: grid;
+      place-items: center;
+    }
+
+    .radar {
+      position: absolute;
+      width: min(480px, 88vw);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(94,234,212,0.14) 0%, rgba(94,234,212,0.03) 34%, transparent 56%),
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 0 80px rgba(94,234,212,0.04), var(--shadow);
+      overflow: hidden;
+    }
+
+    .ring, .cross {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      border-radius: 50%;
+    }
+
+    .ring.r1 { width: 86%; height: 86%; border: 1px solid rgba(255,255,255,0.08); }
+    .ring.r2 { width: 62%; height: 62%; border: 1px solid rgba(255,255,255,0.08); }
+    .ring.r3 { width: 38%; height: 38%; border: 1px solid rgba(255,255,255,0.08); }
+
+    .cross::before,
+    .cross::after {
+      content: "";
+      position: absolute;
+      background: rgba(255,255,255,0.07);
+    }
+
+    .cross::before {
+      width: 1px;
+      height: 100%;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+    }
+
+    .cross::after {
+      height: 1px;
+      width: 100%;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .sweep {
+      position: absolute;
+      inset: -8%;
+      border-radius: 50%;
+      background: conic-gradient(from 90deg, transparent 0deg, transparent 290deg, rgba(94,234,212,0.28) 335deg, rgba(94,234,212,0.04) 360deg);
+      animation: spin 5s linear infinite;
+      filter: blur(2px);
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .blip {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 18px rgba(94,234,212,0.95);
+    }
+
+    .blip.b1 { top: 21%; left: 59%; }
+    .blip.b2 { top: 66%; left: 26%; background: var(--accent2); box-shadow: 0 0 18px rgba(96,165,250,0.85); }
+    .blip.b3 { top: 44%; left: 73%; background: var(--accent3); box-shadow: 0 0 18px rgba(192,132,252,0.85); }
+    .blip.b4 { top: 33%; left: 30%; width: 9px; height: 9px; }
+
+    .dashboard-card {
+      position: absolute;
+      width: 300px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(8,17,27,0.76);
+      border: 1px solid rgba(255,255,255,0.09);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+
+    .dashboard-top {
+      top: 40px;
+      right: 0;
+    }
+
+    .dashboard-bottom {
+      bottom: 24px;
+      left: 8px;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: #dfe9f7;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #d9ffe8;
+      background: rgba(134,239,172,0.12);
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(134,239,172,0.2);
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mini-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .score {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .section {
+      padding: 42px 0 18px;
+    }
+
+    .section-head {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 30px;
+    }
+
+    .section-head h2 {
+      margin: 0 0 12px;
+      font-size: clamp(30px, 4vw, 46px);
+      letter-spacing: -1px;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 17px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 26px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 16px;
+      font-size: 21px;
+      background: linear-gradient(135deg, rgba(94,234,212,0.16), rgba(96,165,250,0.14));
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 19px;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .row {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .row-badge {
+      min-width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #08111a;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    }
+
+    .row h4 {
+      margin: 0 0 5px;
+      font-size: 16px;
+    }
+
+    .row p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .use-cases {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 26px;
+    }
+
+    .use-case {
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: var(--shadow);
+    }
+
+    .use-case strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .use-case span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .cta {
+      margin: 56px 0 72px;
+      padding: 32px;
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(94,234,212,0.12), rgba(96,165,250,0.10), rgba(192,132,252,0.12));
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .cta h2 {
+      margin: 0 0 12px;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: -1px;
+    }
+
+    .cta p {
+      color: var(--muted);
+      margin: 0 auto 24px;
+      max-width: 720px;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .footer {
+      padding: 0 0 34px;
+      color: #7f93ab;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    @media (max-width: 1040px) {
+      .hero,
+      .feature-grid,
+      .cards,
+      .use-cases {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-top: 22px;
+      }
+
+      .hero-visual {
+        order: -1;
+        min-height: 470px;
+      }
+
+      .dashboard-top,
+      .dashboard-bottom {
+        position: relative;
+        top: auto;
+        right: auto;
+        bottom: auto;
+        left: auto;
+        width: 100%;
+        margin-top: 14px;
+      }
+
+      .radar {
+        width: min(420px, 95vw);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav {
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      h1 {
+        letter-spacing: -1.2px;
+      }
+
+      .hero p,
+      .section-head p,
+      .cta p {
+        font-size: 15px;
+      }
+
+      .hero-visual {
+        min-height: 420px;
+      }
+
+      .dashboard-card {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <div class="container">
+    <nav class="nav">
+      <div class="brand">
+        <div class="logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="#8CF7E5" stroke-width="1.6"/>
+            <circle cx="12" cy="12" r="2.4" fill="#8CF7E5"/>
+            <path d="M12 12L20 7" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>Zelvra</div>
+      </div>
+
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#workflow">How it works</a>
+        <a href="#use-cases">Use cases</a>
+        <a class="btn btn-secondary" href="#cta">Live Preview</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">
+          <span class="pulse-dot"></span>
+          Adaptive intelligence radar for what matters most
+        </div>
+
+        <h1>
+          <span class="gradient-text">Watch what matters.</span><br>
+          Filter the noise.
+        </h1>
+
+        <p>
+          Zelvra is an AI-powered radar that monitors companies, people, industries, and topics based on your intent, then turns scattered updates into clear, actionable intelligence.
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#cta">Create Your First Radar</a>
+          <a class="btn btn-secondary" href="#features">See How It Works</a>
+        </div>
+
+        <div class="proof-row">
+          <div class="proof-pill">Intent-aware monitoring</div>
+          <div class="proof-pill">Signal vs noise detection</div>
+          <div class="proof-pill">AI weekly digests</div>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="radar">
+          <div class="sweep"></div>
+          <div class="cross"></div>
+          <div class="ring r1"></div>
+          <div class="ring r2"></div>
+          <div class="ring r3"></div>
+          <div class="blip b1"></div>
+          <div class="blip b2"></div>
+          <div class="blip b3"></div>
+          <div class="blip b4"></div>
+        </div>
+
+        <div class="dashboard-card dashboard-top">
+          <div class="card-title">
+            <span>Radar Overview</span>
+            <span class="status">Live</span>
+          </div>
+          <div class="mini-list">
+            <div class="mini-item">
+              <span>Target</span>
+              <span class="score">OpenAI</span>
+            </div>
+            <div class="mini-item">
+              <span>Purpose</span>
+              <span class="score">Interview prep</span>
+            </div>
+            <div class="mini-item">
+              <span>Signals this week</span>
+              <span class="score">12</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-card dashboard-bottom">
+          <div class="card-title">
+            <span>What Changed</span>
+            <span style="color:#9eb0c7;font-size:12px;">AI Summary</span>
+          </div>
+          <div class="mini-list">
+            <div class="mini-item">
+              <span>Leadership interview posted</span>
+              <span class="score">High</span>
+            </div>
+            <div class="mini-item">
+              <span>Hiring page updated</span>
+              <span class="score">Signal</span>
+            </div>
+            <div class="mini-item">
+              <span>New product rollout</span>
+              <span class="score">Watch</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="section-head">
+        <h2>Built to turn overload into intelligence</h2>
+        <p>
+          Most tools dump alerts. Zelvra adapts to why you care, tracks the right signals, and explains what changed in a way that is actually useful.
+        </p>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <div class="icon">🎯</div>
+          <h3>Intent-Aware Monitoring</h3>
+          <p>
+            Tell Zelvra what you want to watch and why. It automatically shapes the surveillance strategy around your goal.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="icon">📡</div>
+          <h3>Signal vs Noise</h3>
+          <p>
+            Not every update matters. Zelvra highlights meaningful changes and filters out repetitive, low-value noise.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="icon">🧠</div>
+          <h3>AI Interpretation</h3>
+          <p>
+            Every important change comes with context: why it matters, how urgent it is, and what you should pay attention to next.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="workflow">
+      <div class="section-head">
+        <h2>How Zelvra works</h2>
+        <p>
+          A simple workflow that feels smart from the first interaction.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+        <div class="panel">
+          <div class="stack">
+            <div class="row">
+              <div class="row-badge">1</div>
+              <div>
+                <h4>Create a Radar</h4>
+                <p>Choose a company, person, topic, industry, or keyword you want to monitor.</p>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="row-badge">2</div>
+              <div>
+                <h4>Set your intent</h4>
+                <p>Explain why you care, like interview prep, competitor tracking, investing, or research.</p>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="row-badge">3</div>
+              <div>
+                <h4>Let Zelvra adapt</h4>
+                <p>The platform builds the right watch strategy and prioritizes the most relevant signals.</p>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="row-badge">4</div>
+              <div>
+                <h4>Get clear intelligence</h4>
+                <p>Receive updates, summaries, and digest-style insights with practical next-step guidance.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div style="margin-bottom: 16px; font-size: 13px; color: #cddbf0;">Sample Radar Strategy</div>
+          <div class="stack">
+            <div class="mini-item">
+              <span>Target</span>
+              <span class="score">NVIDIA</span>
+            </div>
+            <div class="mini-item">
+              <span>User Goal</span>
+              <span class="score">Sector research</span>
+            </div>
+            <div class="mini-item">
+              <span>Monitors</span>
+              <span class="score">News, jobs, launches</span>
+            </div>
+            <div class="mini-item">
+              <span>Update Frequency</span>
+              <span class="score">Weekly digest</span>
+            </div>
+            <div class="mini-item">
+              <span>Priority</span>
+              <span class="score">Strategic signals</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="use-cases">
+      <div class="section-head">
+        <h2>Made for real-world use cases</h2>
+        <p>
+          Zelvra is flexible enough to serve different audiences while keeping one clear promise: watch what matters.
+        </p>
+      </div>
+
+      <div class="use-cases">
+        <div class="use-case">
+          <strong>Founders</strong>
+          <span>Track competitors, pricing changes, launches, and strategic moves without doing hours of manual research.</span>
+        </div>
+
+        <div class="use-case">
+          <strong>Job Seekers</strong>
+          <span>Monitor a company before interviews and understand what is changing inside the organization.</span>
+        </div>
+
+        <div class="use-case">
+          <strong>Students</strong>
+          <span>Follow industries, public figures, and emerging topics for class projects, papers, and market awareness.</span>
+        </div>
+
+        <div class="use-case">
+          <strong>Investors</strong>
+          <span>Track sectors and companies with more context, less noise, and better awareness of meaningful developments.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta" id="cta">
+      <h2>Start building your first Radar</h2>
+      <p>
+        This preview showcases the concept for Zelvra: an adaptive intelligence platform that transforms scattered information into strategic clarity.
+      </p>
+      <div class="hero-actions" style="justify-content:center;">
+        <a class="btn btn-primary" href="#">Launch Preview</a>
+        <a class="btn btn-secondary" href="#">Join Waitlist</a>
+      </div>
+    </section>
+
+    <div class="footer">
+      Zelvra — Adaptive intelligence for what matters
+    </div>
+  </div>
+</body>
+</html>

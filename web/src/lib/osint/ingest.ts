@@ -30,6 +30,7 @@ export async function runIngestion(sources: Source[]): Promise<IngestResult> {
   const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 
   for (const source of sources) {
+    let fetchError: string | null = null;
     try {
       const body = await fetchSource(source);
       result.fetched += 1;
@@ -37,7 +38,6 @@ export async function runIngestion(sources: Source[]): Promise<IngestResult> {
       const hash = sha256(body);
       const content = body.length > MAX_CONTENT_BYTES ? body.slice(0, MAX_CONTENT_BYTES) : body;
 
-      // Fetch the previous signal (if any) so we can diff + explain change.
       const { data: prevRows } = await supabase
         .from("signals")
         .select("id, content")
@@ -63,41 +63,44 @@ export async function runIngestion(sources: Source[]): Promise<IngestResult> {
 
       if (!inserted || inserted.length === 0) {
         result.skipped += 1;
-        continue;
+      } else {
+        result.inserted += 1;
+        const inserted0 = inserted[0] as { id: string; observed_at: string };
+
+        const [summary, changeSummary] = await Promise.all([
+          summarizeSignal(content),
+          previous ? explainDiff(previous.content, content) : Promise.resolve(null),
+        ]);
+
+        if (summary || changeSummary) {
+          await supabase
+            .from("signals")
+            .update({ summary, change_summary: changeSummary })
+            .eq("id", inserted0.id);
+        }
+
+        await notifyNewSignal({
+          signal: {
+            id: inserted0.id,
+            content,
+            observed_at: inserted0.observed_at,
+            summary,
+            change_summary: changeSummary,
+          },
+          source: { label: source.label, kind: source.kind, url: source.url },
+          appUrl,
+        });
       }
-      result.inserted += 1;
-      const inserted0 = inserted[0] as { id: string; observed_at: string };
-
-      // AI summary + change explanation run in parallel and are best-effort.
-      const [summary, changeSummary] = await Promise.all([
-        summarizeSignal(content),
-        previous ? explainDiff(previous.content, content) : Promise.resolve(null),
-      ]);
-
-      if (summary || changeSummary) {
-        await supabase
-          .from("signals")
-          .update({ summary, change_summary: changeSummary })
-          .eq("id", inserted0.id);
-      }
-
-      await notifyNewSignal({
-        signal: {
-          id: inserted0.id,
-          content,
-          observed_at: inserted0.observed_at,
-          summary,
-          change_summary: changeSummary,
-        },
-        source: { label: source.label, kind: source.kind, url: source.url },
-        appUrl,
-      });
     } catch (err) {
-      result.errors.push({
-        sourceId: source.id,
-        message: err instanceof Error ? err.message : String(err),
-      });
+      fetchError = err instanceof Error ? err.message : String(err);
+      result.errors.push({ sourceId: source.id, message: fetchError });
     }
+
+    // Always record fetch attempt — health badge depends on it.
+    await supabase
+      .from("sources")
+      .update({ last_fetched_at: new Date().toISOString(), last_error: fetchError })
+      .eq("id", source.id);
   }
 
   return result;

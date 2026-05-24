@@ -6,6 +6,8 @@ export type Source = {
   url: string;
   label: string | null;
   created_at: string;
+  last_fetched_at: string | null;
+  last_error: string | null;
 };
 
 export type Signal = {

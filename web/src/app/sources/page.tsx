@@ -1,9 +1,19 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Source } from "@/lib/osint/types";
 import { SubmitButton } from "@/components/submit-button";
 import { addSource, deleteSource } from "./actions";
 
 export const dynamic = "force-dynamic";
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return "never";
+  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
 
 export default async function SourcesPage() {
   const supabase = createAdminClient();
@@ -55,31 +65,63 @@ export default async function SourcesPage() {
         {sources.length === 0 && (
           <li className="p-4 text-sm text-[color:var(--muted)]">No targets yet.</li>
         )}
-        {sources.map((s) => (
-          <li
-            key={s.id}
-            className="flex items-center gap-3 p-3 text-sm bg-[color:var(--background-elev)]/30 hover:bg-[color:var(--background-elev)]/60 transition-colors"
-          >
-            <span className="px-1.5 py-0.5 rounded bg-[color:var(--background)] border border-[color:var(--border)] font-mono uppercase tracking-widest text-[10px] text-[color:var(--accent)]">
-              {s.kind}
-            </span>
-            <span className="font-medium text-[color:var(--foreground)] min-w-0">
-              {s.label ?? "—"}
-            </span>
-            <a
-              href={s.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 truncate text-[color:var(--muted)] hover:text-[color:var(--accent)] font-mono text-xs"
+        {sources.map((s) => {
+          const isHealthy = s.last_error == null;
+          const neverFetched = s.last_fetched_at == null;
+          return (
+            <li
+              key={s.id}
+              className="flex items-center gap-3 p-3 text-sm bg-[color:var(--background-elev)]/30 hover:bg-[color:var(--background-elev)]/60 transition-colors"
             >
-              {s.url}
-            </a>
-            <form action={deleteSource}>
-              <input type="hidden" name="id" value={s.id} />
-              <SubmitButton idle="Delete" pending="…" variant="danger" />
-            </form>
-          </li>
-        ))}
+              <span
+                title={
+                  neverFetched
+                    ? "Not yet fetched"
+                    : isHealthy
+                      ? `Last fetched ${timeAgo(s.last_fetched_at)}`
+                      : `Error: ${s.last_error}`
+                }
+                className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
+                  neverFetched
+                    ? "bg-[color:var(--muted)]/40"
+                    : isHealthy
+                      ? "bg-[color:var(--accent)] shadow-[0_0_8px_var(--accent-glow)]"
+                      : "bg-[color:var(--danger)]"
+                }`}
+                aria-hidden
+              />
+              <span className="px-1.5 py-0.5 rounded bg-[color:var(--background)] border border-[color:var(--border)] font-mono uppercase tracking-widest text-[10px] text-[color:var(--accent)]">
+                {s.kind}
+              </span>
+              <Link
+                href={`/sources/${s.id}`}
+                className="flex-1 min-w-0 flex flex-col gap-0.5 hover:text-[color:var(--accent)]"
+              >
+                <span className="font-medium text-[color:var(--foreground)] truncate">
+                  {s.label ?? s.url}
+                </span>
+                <span className="font-mono text-[10px] text-[color:var(--muted)]">
+                  {neverFetched ? "never fetched" : `last ${timeAgo(s.last_fetched_at)}`}
+                  {s.last_error && (
+                    <span className="text-[color:var(--danger)]"> · {s.last_error.slice(0, 80)}</span>
+                  )}
+                </span>
+              </Link>
+              <a
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[color:var(--muted)] hover:text-[color:var(--accent)] font-mono text-[10px]"
+              >
+                open ↗
+              </a>
+              <form action={deleteSource}>
+                <input type="hidden" name="id" value={s.id} />
+                <SubmitButton idle="Delete" pending="…" variant="danger" />
+              </form>
+            </li>
+          );
+        })}
       </ul>
     </main>
   );

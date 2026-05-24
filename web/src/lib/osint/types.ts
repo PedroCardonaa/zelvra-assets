@@ -16,9 +16,11 @@ export type Signal = {
   url: string | null;
   hash: string;
   metadata: Record<string, unknown> | null;
+  summary: string | null;
+  change_summary: string | null;
 };
 
-export type NewSignal = Omit<Signal, "id" | "observed_at"> & {
+export type NewSignal = Omit<Signal, "id" | "observed_at" | "summary" | "change_summary"> & {
   observed_at?: string;
 };
 

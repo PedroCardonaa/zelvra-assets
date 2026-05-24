@@ -101,6 +101,31 @@ export default async function SignalDetail({
         </div>
       </section>
 
+      {(signal.summary || signal.change_summary) && (
+        <section className="flex flex-col gap-3 p-4 rounded border border-[color:var(--border-strong)] bg-[color:var(--background-elev)]/60">
+          {signal.change_summary && (
+            <div className="flex flex-col gap-1">
+              <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[color:var(--accent)]">
+                Δ Change
+              </span>
+              <p className="text-sm text-[color:var(--accent)]">
+                {signal.change_summary}
+              </p>
+            </div>
+          )}
+          {signal.summary && (
+            <div className="flex flex-col gap-1">
+              <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[color:var(--muted)]">
+                AI summary
+              </span>
+              <p className="text-sm text-[color:var(--foreground)]">
+                {signal.summary}
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+
       <nav className="flex items-center justify-between text-xs font-mono">
         {prev ? (
           <Link

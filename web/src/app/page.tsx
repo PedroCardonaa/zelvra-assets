@@ -73,9 +73,20 @@ export default async function Home() {
                   {formatTimestamp(s.observed_at)}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-[color:var(--foreground)]/80 line-clamp-3 font-mono whitespace-pre-wrap break-words">
-                {s.content.slice(0, 280)}
-              </p>
+              {s.change_summary && (
+                <p className="mt-2 text-sm text-[color:var(--accent)] italic">
+                  Δ {s.change_summary}
+                </p>
+              )}
+              {s.summary ? (
+                <p className="mt-2 text-sm text-[color:var(--foreground)]/90">
+                  {s.summary}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-[color:var(--foreground)]/70 line-clamp-2 font-mono whitespace-pre-wrap break-words">
+                  {s.content.slice(0, 240)}
+                </p>
+              )}
             </Link>
           </li>
         ))}

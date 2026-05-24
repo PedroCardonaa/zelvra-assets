@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { summarizeSignal, explainDiff } from "./ai";
+import { notifyNewSignal } from "./notify";
 import type { IngestResult, NewSignal, Source } from "./types";
 
 const MAX_CONTENT_BYTES = 64_000;
@@ -25,6 +27,7 @@ export async function runIngestion(sources: Source[]): Promise<IngestResult> {
   if (sources.length === 0) return result;
 
   const supabase = createAdminClient();
+  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 
   for (const source of sources) {
     try {
@@ -34,6 +37,15 @@ export async function runIngestion(sources: Source[]): Promise<IngestResult> {
       const hash = sha256(body);
       const content = body.length > MAX_CONTENT_BYTES ? body.slice(0, MAX_CONTENT_BYTES) : body;
 
+      // Fetch the previous signal (if any) so we can diff + explain change.
+      const { data: prevRows } = await supabase
+        .from("signals")
+        .select("id, content")
+        .eq("source_id", source.id)
+        .order("observed_at", { ascending: false })
+        .limit(1);
+      const previous = prevRows?.[0] ?? null;
+
       const signal: NewSignal = {
         source_id: source.id,
         content,
@@ -42,14 +54,44 @@ export async function runIngestion(sources: Source[]): Promise<IngestResult> {
         metadata: { bytes: body.length },
       };
 
-      const { data, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("signals")
         .upsert(signal, { onConflict: "source_id,hash", ignoreDuplicates: true })
-        .select("id");
+        .select("id, observed_at");
 
       if (error) throw new Error(error.message);
-      if (data && data.length > 0) result.inserted += 1;
-      else result.skipped += 1;
+
+      if (!inserted || inserted.length === 0) {
+        result.skipped += 1;
+        continue;
+      }
+      result.inserted += 1;
+      const inserted0 = inserted[0] as { id: string; observed_at: string };
+
+      // AI summary + change explanation run in parallel and are best-effort.
+      const [summary, changeSummary] = await Promise.all([
+        summarizeSignal(content),
+        previous ? explainDiff(previous.content, content) : Promise.resolve(null),
+      ]);
+
+      if (summary || changeSummary) {
+        await supabase
+          .from("signals")
+          .update({ summary, change_summary: changeSummary })
+          .eq("id", inserted0.id);
+      }
+
+      await notifyNewSignal({
+        signal: {
+          id: inserted0.id,
+          content,
+          observed_at: inserted0.observed_at,
+          summary,
+          change_summary: changeSummary,
+        },
+        source: { label: source.label, kind: source.kind, url: source.url },
+        appUrl,
+      });
     } catch (err) {
       result.errors.push({
         sourceId: source.id,

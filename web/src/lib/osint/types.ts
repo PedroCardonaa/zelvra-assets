@@ -4,17 +4,22 @@ export type Source = {
   id: string;
   kind: SourceKind;
   url: string;
-  label?: string;
+  label: string | null;
+  created_at: string;
 };
 
-// A normalized observation pulled from a source.
 export type Signal = {
-  sourceId: string;
-  observedAt: string; // ISO timestamp
+  id: string;
+  source_id: string;
+  observed_at: string;
   content: string;
-  url?: string;
-  hash: string; // content hash for dedup
-  metadata?: Record<string, unknown>;
+  url: string | null;
+  hash: string;
+  metadata: Record<string, unknown> | null;
+};
+
+export type NewSignal = Omit<Signal, "id" | "observed_at"> & {
+  observed_at?: string;
 };
 
 export type IngestResult = {

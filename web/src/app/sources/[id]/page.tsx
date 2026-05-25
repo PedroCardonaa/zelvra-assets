@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeLineDiff, summarizeDiff } from "@/lib/osint/diff";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { RadarIllustration } from "@/components/radar-illustration";
 import type { Signal, Source } from "@/lib/osint/types";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +58,6 @@ export default async function SourceDetail({
     "id" | "observed_at" | "content" | "summary" | "change_summary"
   >[];
 
-  // Diff stats per row: each signal[i] vs signal[i+1] (older).
   const stats = signals.map((s, i) => {
     const older = signals[i + 1];
     if (!older) return null;
@@ -65,34 +66,35 @@ export default async function SourceDetail({
   });
 
   const isHealthy = source.last_error == null;
+  const displayName = source.label ?? source.url;
 
   return (
     <main className="flex flex-1 flex-col gap-8 px-6 py-10 max-w-4xl mx-auto w-full">
-      <section className="flex flex-col gap-3">
-        <Link
-          href="/sources"
-          className="text-xs font-mono uppercase tracking-widest text-[color:var(--muted)] hover:text-[color:var(--accent)] w-fit"
-        >
-          ← Sources
-        </Link>
+      <section className="flex flex-col gap-4">
+        <Breadcrumbs
+          items={[
+            { label: "Sources", href: "/sources" },
+            { label: displayName },
+          ]}
+        />
         <div className="flex items-baseline gap-3 flex-wrap">
           <span className="px-2 py-0.5 rounded bg-[color:var(--background-elev)] border border-[color:var(--border)] font-mono uppercase tracking-widest text-[10px] text-[color:var(--accent)]">
             {source.kind}
           </span>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {source.label ?? source.url}
+          <h1 className="font-display text-[2rem] leading-tight tracking-tight">
+            {displayName}
           </h1>
         </div>
         <a
           href={source.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs font-mono text-[color:var(--muted)] hover:text-[color:var(--accent)] truncate"
+          className="text-xs font-mono text-[color:var(--muted)] hover:text-[color:var(--accent)] truncate transition-colors"
         >
-          {source.url}
+          {source.url} ↗
         </a>
 
-        <div className="flex flex-wrap items-center gap-4 mt-2 text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-1 text-xs font-mono">
           <span className="flex items-center gap-2">
             <span
               className={`inline-block w-2 h-2 rounded-full ${
@@ -103,7 +105,7 @@ export default async function SourceDetail({
               aria-hidden
             />
             <span className="text-[color:var(--muted)]">
-              {isHealthy ? "healthy" : "error"} · last fetch {timeAgo(source.last_fetched_at)}
+              {isHealthy ? "Healthy" : "Error"} · last fetch {timeAgo(source.last_fetched_at)}
             </span>
           </span>
           <span className="text-[color:var(--muted)]">
@@ -112,54 +114,64 @@ export default async function SourceDetail({
         </div>
 
         {source.last_error && (
-          <p className="text-xs font-mono text-[color:var(--danger)] mt-1 p-2 rounded border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/5">
+          <p className="text-xs font-mono text-[color:var(--danger)] p-2 rounded border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/5">
             {source.last_error}
           </p>
         )}
       </section>
 
-      <ul className="flex flex-col gap-2">
-        {signals.length === 0 && (
-          <li className="p-6 text-sm text-[color:var(--muted)] border border-dashed border-[color:var(--border)] rounded text-center">
-            No signals captured from this source yet.
-          </li>
-        )}
-        {signals.map((s, i) => {
-          const stat = stats[i];
-          return (
-            <li key={s.id}>
-              <Link
-                href={`/signals/${s.id}`}
-                className="block p-3 rounded border border-[color:var(--border)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--background-elev)]/60 transition-colors"
-              >
-                <div className="flex items-center gap-3 text-xs font-mono text-[color:var(--muted)]">
-                  <span>{formatTimestamp(s.observed_at)}</span>
-                  {stat && (stat.added > 0 || stat.removed > 0) ? (
-                    <span className="flex items-center gap-2">
-                      <span className="text-[color:var(--accent)]">+{stat.added}</span>
-                      <span className="text-[color:var(--danger)]">−{stat.removed}</span>
-                    </span>
-                  ) : i === signals.length - 1 ? (
-                    <span className="text-[color:var(--muted)]/60">initial capture</span>
-                  ) : (
-                    <span className="text-[color:var(--muted)]/60">no change</span>
+      <div className="border-t border-[color:var(--border)]" />
+
+      {signals.length === 0 ? (
+        <div className="flex flex-col items-center text-center gap-4 py-12 px-6 fade-up">
+          <RadarIllustration size={160} />
+          <h2 className="font-display text-xl tracking-tight">
+            Awaiting first contact.
+          </h2>
+          <p className="text-sm text-[color:var(--muted)] max-w-md">
+            No signals from this source yet. Trigger a sweep from the dashboard
+            or wait for the next cron tick.
+          </p>
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {signals.map((s, i) => {
+            const stat = stats[i];
+            return (
+              <li key={s.id}>
+                <Link
+                  href={`/signals/${s.id}`}
+                  className="group block p-3 rounded border border-[color:var(--border)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--background-elev)]/60 hover:shadow-[0_0_24px_-12px_var(--accent-glow)] transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3 text-xs font-mono text-[color:var(--muted)]">
+                    <span>{formatTimestamp(s.observed_at)}</span>
+                    {stat && (stat.added > 0 || stat.removed > 0) ? (
+                      <span className="flex items-center gap-2">
+                        <span className="text-[color:var(--accent)]">+{stat.added}</span>
+                        <span className="text-[color:var(--danger)]">−{stat.removed}</span>
+                      </span>
+                    ) : i === signals.length - 1 ? (
+                      <span className="text-[color:var(--muted)]/60">initial capture</span>
+                    ) : (
+                      <span className="text-[color:var(--muted)]/60">no change</span>
+                    )}
+                  </div>
+                  {s.change_summary && (
+                    <p className="mt-1.5 text-sm text-[color:var(--accent)] italic">
+                      Δ {s.change_summary}
+                    </p>
                   )}
-                </div>
-                {s.change_summary && (
-                  <p className="mt-1.5 text-sm text-[color:var(--accent)] italic">
-                    Δ {s.change_summary}
-                  </p>
-                )}
-                {s.summary && (
-                  <p className="mt-1 text-sm text-[color:var(--foreground)]/90">
-                    {s.summary}
-                  </p>
-                )}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+                  {s.summary && (
+                    <p className="mt-1 text-sm text-[color:var(--foreground)]/90">
+                      {s.summary}
+                    </p>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </main>
   );
 }

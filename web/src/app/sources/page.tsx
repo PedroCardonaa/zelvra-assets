@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Source } from "@/lib/osint/types";
 import { SubmitButton } from "@/components/submit-button";
+import { RadarIllustration } from "@/components/radar-illustration";
 import { addSource, deleteSource } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,12 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-export default async function SourcesPage() {
+export default async function SourcesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ suggest?: string }>;
+}) {
+  const { suggest } = await searchParams;
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("sources")
@@ -30,7 +36,9 @@ export default async function SourcesPage() {
         <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[color:var(--muted)]">
           Targets
         </span>
-        <h1 className="text-2xl font-semibold tracking-tight">Sources</h1>
+        <h1 className="font-display text-[2rem] leading-tight tracking-tight">
+          Sources
+        </h1>
       </section>
 
       <form
@@ -41,6 +49,7 @@ export default async function SourcesPage() {
           name="url"
           type="url"
           required
+          defaultValue={suggest ?? ""}
           placeholder="https://example.com/feed"
           className="px-3 py-2 text-sm font-mono"
         />
@@ -61,68 +70,78 @@ export default async function SourcesPage() {
         </p>
       )}
 
-      <ul className="flex flex-col divide-y divide-[color:var(--border)] border border-[color:var(--border)] rounded overflow-hidden">
-        {sources.length === 0 && (
-          <li className="p-4 text-sm text-[color:var(--muted)]">No targets yet.</li>
-        )}
-        {sources.map((s) => {
-          const isHealthy = s.last_error == null;
-          const neverFetched = s.last_fetched_at == null;
-          return (
-            <li
-              key={s.id}
-              className="flex items-center gap-3 p-3 text-sm bg-[color:var(--background-elev)]/30 hover:bg-[color:var(--background-elev)]/60 transition-colors"
-            >
-              <span
-                title={
-                  neverFetched
-                    ? "Not yet fetched"
-                    : isHealthy
-                      ? `Last fetched ${timeAgo(s.last_fetched_at)}`
-                      : `Error: ${s.last_error}`
-                }
-                className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
-                  neverFetched
-                    ? "bg-[color:var(--muted)]/40"
-                    : isHealthy
-                      ? "bg-[color:var(--accent)] shadow-[0_0_8px_var(--accent-glow)]"
-                      : "bg-[color:var(--danger)]"
-                }`}
-                aria-hidden
-              />
-              <span className="px-1.5 py-0.5 rounded bg-[color:var(--background)] border border-[color:var(--border)] font-mono uppercase tracking-widest text-[10px] text-[color:var(--accent)]">
-                {s.kind}
-              </span>
-              <Link
-                href={`/sources/${s.id}`}
-                className="flex-1 min-w-0 flex flex-col gap-0.5 hover:text-[color:var(--accent)]"
+      {sources.length === 0 ? (
+        <div className="flex flex-col items-center text-center gap-4 py-12 px-6 fade-up">
+          <RadarIllustration size={160} />
+          <h2 className="font-display text-xl tracking-tight">
+            No targets yet.
+          </h2>
+          <p className="text-sm text-[color:var(--muted)] max-w-md">
+            Add any URL above — a feed, a status page, a profile — and Zelvra
+            will start watching it on the next sweep.
+          </p>
+        </div>
+      ) : (
+        <ul className="flex flex-col divide-y divide-[color:var(--border)] border border-[color:var(--border)] rounded overflow-hidden">
+          {sources.map((s) => {
+            const isHealthy = s.last_error == null;
+            const neverFetched = s.last_fetched_at == null;
+            return (
+              <li
+                key={s.id}
+                className="flex items-center gap-3 p-3 text-sm bg-[color:var(--background-elev)]/30 hover:bg-[color:var(--background-elev)]/60 transition-colors"
               >
-                <span className="font-medium text-[color:var(--foreground)] truncate">
-                  {s.label ?? s.url}
+                <span
+                  title={
+                    neverFetched
+                      ? "Not yet fetched"
+                      : isHealthy
+                        ? `Last fetched ${timeAgo(s.last_fetched_at)}`
+                        : `Error: ${s.last_error}`
+                  }
+                  className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
+                    neverFetched
+                      ? "bg-[color:var(--muted)]/40"
+                      : isHealthy
+                        ? "bg-[color:var(--accent)] shadow-[0_0_8px_var(--accent-glow)]"
+                        : "bg-[color:var(--danger)]"
+                  }`}
+                  aria-hidden
+                />
+                <span className="px-1.5 py-0.5 rounded bg-[color:var(--background)] border border-[color:var(--border)] font-mono uppercase tracking-widest text-[10px] text-[color:var(--accent)]">
+                  {s.kind}
                 </span>
-                <span className="font-mono text-[10px] text-[color:var(--muted)]">
-                  {neverFetched ? "never fetched" : `last ${timeAgo(s.last_fetched_at)}`}
-                  {s.last_error && (
-                    <span className="text-[color:var(--danger)]"> · {s.last_error.slice(0, 80)}</span>
-                  )}
-                </span>
-              </Link>
-              <a
-                href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[color:var(--muted)] hover:text-[color:var(--accent)] font-mono text-[10px]"
-              >
-                open ↗
-              </a>
-              <form action={deleteSource}>
-                <input type="hidden" name="id" value={s.id} />
-                <SubmitButton idle="Delete" pending="…" variant="danger" />
-              </form>
-            </li>
-          );
-        })}
-      </ul>
+                <Link
+                  href={`/sources/${s.id}`}
+                  className="flex-1 min-w-0 flex flex-col gap-0.5 hover:text-[color:var(--accent)] transition-colors"
+                >
+                  <span className="font-medium text-[color:var(--foreground)] truncate">
+                    {s.label ?? s.url}
+                  </span>
+                  <span className="font-mono text-[10px] text-[color:var(--muted)]">
+                    {neverFetched ? "never fetched" : `last ${timeAgo(s.last_fetched_at)}`}
+                    {s.last_error && (
+                      <span className="text-[color:var(--danger)]"> · {s.last_error.slice(0, 80)}</span>
+                    )}
+                  </span>
+                </Link>
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[color:var(--muted)] hover:text-[color:var(--accent)] font-mono text-[10px] transition-colors"
+                >
+                  open ↗
+                </a>
+                <form action={deleteSource}>
+                  <input type="hidden" name="id" value={s.id} />
+                  <SubmitButton idle="Delete" pending="…" variant="danger" />
+                </form>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </main>
   );
 }

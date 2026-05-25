@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Signal, Source, SourceKind } from "@/lib/osint/types";
 import { SubmitButton } from "@/components/submit-button";
 import { DashboardFilters } from "@/components/dashboard-filters";
+import { SignalCard } from "@/components/signal-card";
+import { RadarIllustration } from "@/components/radar-illustration";
 import { runIngestionNow } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +15,11 @@ type SignalWithSource = Signal & {
 
 const KINDS: SourceKind[] = ["web", "rss", "social", "paste", "api"];
 
-function formatTimestamp(iso: string): string {
-  return new Date(iso).toISOString().replace("T", " ").slice(0, 19) + "Z";
-}
+const SAMPLE_SOURCES = [
+  { label: "Hacker News front page", url: "https://news.ycombinator.com" },
+  { label: "GitHub trending", url: "https://github.com/trending" },
+  { label: "A status page", url: "https://www.githubstatus.com" },
+];
 
 export default async function Home({
   searchParams,
@@ -73,6 +77,7 @@ export default async function Home({
   >[];
 
   const hasFilters = !!(q || kindFilter || sourceFilter || changesOnly);
+  const hasSources = sources.length > 0;
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-10 max-w-5xl mx-auto w-full">
@@ -81,7 +86,7 @@ export default async function Home({
           <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[color:var(--muted)]">
             Scope · last 50{hasFilters ? " (filtered)" : ""}
           </span>
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="font-display text-[2rem] leading-tight tracking-tight">
             Signal contacts
           </h1>
         </div>
@@ -106,69 +111,81 @@ export default async function Home({
         </p>
       )}
 
-      <ul className="flex flex-col gap-2">
-        {signals.length === 0 && (
-          <li className="p-6 text-sm text-[color:var(--muted)] border border-dashed border-[color:var(--border)] rounded text-center">
-            {hasFilters ? (
-              <>No contacts match these filters.</>
-            ) : (
-              <>
-                No contacts yet. Add a source on{" "}
-                <Link
-                  href="/sources"
-                  className="text-[color:var(--accent)] underline-offset-4 hover:underline"
-                >
-                  /sources
-                </Link>
-                {" "}and trigger a sweep.
-              </>
-            )}
-          </li>
-        )}
-        {signals.map((s) => (
-          <li
-            key={s.id}
-            className="p-3 rounded border border-[color:var(--border)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--background-elev)]/60 transition-colors"
-          >
-            <div className="flex items-center gap-2 text-xs text-[color:var(--muted)]">
-              <span className="px-1.5 py-0.5 rounded bg-[color:var(--background-elev)] border border-[color:var(--border)] font-mono uppercase tracking-widest text-[10px] text-[color:var(--accent)]">
-                {s.sources?.kind ?? "—"}
-              </span>
-              {s.sources ? (
-                <Link
-                  href={`/sources/${s.sources.id}`}
-                  className="font-medium text-[color:var(--foreground)] truncate hover:text-[color:var(--accent)]"
-                >
-                  {s.sources.label ?? s.sources.url}
-                </Link>
-              ) : (
-                <span className="font-medium text-[color:var(--muted)] truncate">
-                  (deleted source)
-                </span>
-              )}
-              <span className="ml-auto font-mono text-[10px]">
-                {formatTimestamp(s.observed_at)}
-              </span>
-            </div>
-            <Link href={`/signals/${s.id}`} className="block mt-2">
-              {s.change_summary && (
-                <p className="text-sm text-[color:var(--accent)] italic">
-                  Δ {s.change_summary}
-                </p>
-              )}
-              {s.summary ? (
-                <p className="mt-1 text-sm text-[color:var(--foreground)]/90">
-                  {s.summary}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-[color:var(--foreground)]/70 line-clamp-2 font-mono whitespace-pre-wrap break-words">
-                  {s.content.slice(0, 240)}
-                </p>
-              )}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {signals.length === 0 ? (
+        <EmptyState hasFilters={hasFilters} hasSources={hasSources} />
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {signals.map((s) => (
+            <SignalCard key={s.id} signal={s} />
+          ))}
+        </ul>
+      )}
     </main>
+  );
+}
+
+function EmptyState({
+  hasFilters,
+  hasSources,
+}: {
+  hasFilters: boolean;
+  hasSources: boolean;
+}) {
+  if (hasFilters) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-16 px-6 border border-dashed border-[color:var(--border)] rounded fade-up">
+        <p className="text-sm text-[color:var(--muted)]">
+          No contacts match these filters.
+        </p>
+        <Link
+          href="/"
+          className="px-3 py-1.5 rounded border border-[color:var(--border-strong)] font-mono text-[10px] uppercase tracking-widest text-[color:var(--foreground)] hover:bg-[color:var(--background-elev)] transition-colors"
+        >
+          Clear filters
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center text-center gap-6 py-16 px-6 fade-up">
+      <RadarIllustration size={200} />
+      <div className="flex flex-col gap-2 max-w-md">
+        <h2 className="font-display text-2xl tracking-tight">
+          The scope is clear.
+        </h2>
+        <p className="text-sm text-[color:var(--muted)] leading-relaxed">
+          {hasSources
+            ? "Sources are configured but nothing has been captured yet. Trigger a sweep to get the first contact, or wait for the next cron tick."
+            : "Add your first source to start tracking. Zelvra will fetch, dedupe, diff, and summarize automatically."}
+        </p>
+      </div>
+      {!hasSources && (
+        <>
+          <div className="flex flex-col items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[color:var(--muted)]">
+              Try one of these
+            </span>
+            <div className="flex flex-wrap justify-center gap-2 max-w-lg">
+              {SAMPLE_SOURCES.map((s) => (
+                <Link
+                  key={s.url}
+                  href={`/sources?suggest=${encodeURIComponent(s.url)}`}
+                  className="px-3 py-1.5 rounded border border-[color:var(--border)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] text-xs font-mono text-[color:var(--muted)] transition-colors"
+                >
+                  {s.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <Link
+            href="/sources"
+            className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded bg-[color:var(--accent)] text-black font-mono text-xs uppercase tracking-widest hover:bg-[color:var(--accent-dim)] hover:text-white transition-colors shadow-[0_0_18px_var(--accent-glow)]"
+          >
+            Add a source →
+          </Link>
+        </>
+      )}
+    </div>
   );
 }

@@ -4,6 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { computeLineDiff, summarizeDiff } from "@/lib/osint/diff";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RadarIllustration } from "@/components/radar-illustration";
+import {
+  ActivitySparkline,
+  buildDailyBuckets,
+} from "@/components/activity-sparkline";
 import type { Signal, Source } from "@/lib/osint/types";
 
 export const dynamic = "force-dynamic";
@@ -94,23 +98,30 @@ export default async function SourceDetail({
           {source.url} ↗
         </a>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-1 text-xs font-mono">
-          <span className="flex items-center gap-2">
-            <span
-              className={`inline-block w-2 h-2 rounded-full ${
-                isHealthy
-                  ? "bg-[color:var(--accent)] shadow-[0_0_8px_var(--accent-glow)]"
-                  : "bg-[color:var(--danger)]"
-              }`}
-              aria-hidden
-            />
-            <span className="text-[color:var(--muted)]">
-              {isHealthy ? "Healthy" : "Error"} · last fetch {timeAgo(source.last_fetched_at)}
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-4 mt-2">
+          <div className="flex flex-col gap-2 text-xs font-mono">
+            <span className="flex items-center gap-2">
+              <span
+                className={`inline-block w-2 h-2 rounded-full ${
+                  isHealthy
+                    ? "bg-[color:var(--accent)] shadow-[0_0_8px_var(--accent-glow)]"
+                    : "bg-[color:var(--danger)]"
+                }`}
+                aria-hidden
+              />
+              <span className="text-[color:var(--muted)]">
+                {isHealthy ? "Healthy" : "Error"} · last fetch {timeAgo(source.last_fetched_at)}
+              </span>
             </span>
-          </span>
-          <span className="text-[color:var(--muted)]">
-            {signals.length} signal{signals.length === 1 ? "" : "s"} captured
-          </span>
+            <span className="text-[color:var(--muted)]">
+              {signals.length} signal{signals.length === 1 ? "" : "s"} captured
+            </span>
+          </div>
+          {signals.length > 0 && (
+            <ActivitySparkline
+              buckets={buildDailyBuckets(signals.map((s) => s.observed_at))}
+            />
+          )}
         </div>
 
         {source.last_error && (

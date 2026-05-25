@@ -18,20 +18,44 @@ const VARIANTS: Record<NonNullable<Props["variant"]>, string> = {
     "text-[color:var(--danger)] hover:underline",
 };
 
+function Spinner() {
+  // Phosphor sweep: a 270° arc that spins. Renders at the current text color.
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      className="spinner"
+      aria-hidden
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeOpacity="0.2"
+        strokeWidth="3"
+      />
+      <path
+        d="M21 12a9 9 0 0 1-9 9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function SubmitButton({ idle, pending, variant = "primary", className = "" }: Props) {
   const { pending: isPending } = useFormStatus();
   return (
     <button
       type="submit"
       disabled={isPending}
-      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded font-mono text-xs uppercase tracking-widest transition-all disabled:opacity-60 disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded font-mono text-xs uppercase tracking-widest transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
     >
-      {isPending && (
-        <span
-          className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"
-          aria-hidden
-        />
-      )}
+      {isPending && <Spinner />}
       {isPending ? pending : idle}
     </button>
   );

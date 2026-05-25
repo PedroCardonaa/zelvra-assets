@@ -16,6 +16,32 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="flex items-baseline justify-between gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[color:var(--accent)]">
+          {label}
+        </span>
+        {hint && (
+          <span className="font-mono text-[10px] text-[color:var(--muted)]/70 truncate">
+            {hint}
+          </span>
+        )}
+      </span>
+      {children}
+    </label>
+  );
+}
+
 export default async function SourcesPage({
   searchParams,
 }: {
@@ -43,25 +69,44 @@ export default async function SourcesPage({
 
       <form
         action={addSource}
-        className="grid grid-cols-1 sm:grid-cols-[1fr_140px_1fr_auto] gap-2 p-4 rounded border border-[color:var(--border)] bg-[color:var(--background-elev)]/40"
+        className="flex flex-col gap-4 p-5 rounded border border-[color:var(--border)] bg-[color:var(--background-elev)]/40"
       >
-        <input
-          name="url"
-          type="url"
-          required
-          defaultValue={suggest ?? ""}
-          placeholder="https://example.com/feed"
-          className="px-3 py-2 text-sm font-mono"
-        />
-        <select name="kind" defaultValue="web" className="px-3 py-2 text-sm font-mono">
-          <option value="web">web</option>
-          <option value="rss">rss</option>
-          <option value="social">social</option>
-          <option value="paste">paste</option>
-          <option value="api">api</option>
-        </select>
-        <input name="label" placeholder="label (optional)" className="px-3 py-2 text-sm" />
-        <SubmitButton idle="Add target" pending="Adding…" variant="primary" />
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_1fr] gap-4">
+          <Field label="URL" hint="The page or feed to watch">
+            <input
+              name="url"
+              type="url"
+              required
+              defaultValue={suggest ?? ""}
+              placeholder="https://example.com/feed"
+              autoFocus={!!suggest}
+              className="w-full px-3 py-2 text-sm font-mono focus:border-[color:var(--accent)] transition-colors"
+            />
+          </Field>
+          <Field label="Kind" hint="Category">
+            <select
+              name="kind"
+              defaultValue="web"
+              className="w-full px-3 py-2 text-sm font-mono focus:border-[color:var(--accent)] transition-colors"
+            >
+              <option value="web">web</option>
+              <option value="rss">rss</option>
+              <option value="social">social</option>
+              <option value="paste">paste</option>
+              <option value="api">api</option>
+            </select>
+          </Field>
+          <Field label="Label" hint="Optional · shown on cards">
+            <input
+              name="label"
+              placeholder="Hacker News front page"
+              className="w-full px-3 py-2 text-sm focus:border-[color:var(--accent)] transition-colors"
+            />
+          </Field>
+        </div>
+        <div className="flex items-center justify-end">
+          <SubmitButton idle="Add target →" pending="Adding…" variant="primary" />
+        </div>
       </form>
 
       {error && (
